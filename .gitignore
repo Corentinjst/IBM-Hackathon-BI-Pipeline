@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Database credentials - IMPORTANT!
+# Note: You should move sensitive credentials to environment variables
+# config.py
+# .env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+APP 
+# Ignorer tous les node_modules
+**/node_modules/
+
+# Ignorer tous les fichiers .env
+**/.env
+
