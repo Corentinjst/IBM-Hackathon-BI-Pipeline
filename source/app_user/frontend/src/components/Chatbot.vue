@@ -193,46 +193,83 @@ const sendMessage = async () => {
     }
 
     const data = await response.json();
-    
+
     // Arrêter le chronomètre
     const duration = stopTimer();
 
     // Retirer l'indicateur de chargement
     messages.value.pop();
 
-    // ✅ Vérifier que matches existe et n'est pas vide
-    if (!data.matches || data.matches.length === 0) {
+    // ✅ Check if LLM processed the response
+    if (data.llm_processed) {
+      // New format: LLM-synthesized answer
+      if (!data.answer) {
+        messages.value.push({
+          type: 'assistant',
+          html: '<p style="color: #e74c3c;">❌ Aucune réponse trouvée pour votre question.</p>',
+          duration: duration,
+          feedback: null,
+          userQuery: userMessage,
+          matchedQuestionId: null,
+          matchedQuestionTitle: null,
+          similarityScore: null,
+          responseTimeMs: Math.round(duration * 1000),
+        });
+        scrollToBottom();
+        return;
+      }
+
+      // Use primary source for feedback tracking
+      const primarySource = data.sources && data.sources.length > 0 ? data.sources[0] : null;
+
       messages.value.push({
         type: 'assistant',
-        html: '<p style="color: #e74c3c;">❌ Aucune réponse trouvée pour votre question.</p>',
+        html: data.answer, // LLM-generated answer
         duration: duration,
         feedback: null,
         userQuery: userMessage,
-        matchedQuestionId: null,
-        matchedQuestionTitle: null,
-        similarityScore: null,
+        matchedQuestionId: primarySource?.id || null,
+        matchedQuestionTitle: primarySource?.question || 'LLM Synthesized',
+        similarityScore: primarySource?.score || null,
         responseTimeMs: Math.round(duration * 1000),
+        llmProcessed: true,
+        sources: data.sources, // Store all sources for potential future use
       });
-      scrollToBottom();
-      return;
-    }
-    
-    // ✅ Récupérer le premier match
-    const firstMatch = data.matches[0];
+    } else {
+      // Original format: raw matches
+      if (!data.matches || data.matches.length === 0) {
+        messages.value.push({
+          type: 'assistant',
+          html: '<p style="color: #e74c3c;">❌ Aucune réponse trouvée pour votre question.</p>',
+          duration: duration,
+          feedback: null,
+          userQuery: userMessage,
+          matchedQuestionId: null,
+          matchedQuestionTitle: null,
+          similarityScore: null,
+          responseTimeMs: Math.round(duration * 1000),
+        });
+        scrollToBottom();
+        return;
+      }
 
-    // Ajouter la réponse de l'assistant
-    messages.value.push({
-      type: 'assistant',
-      html: firstMatch.answer || '<p>Réponse non disponible</p>', // ✅ Utiliser 'answer'
-      duration: duration,
-      feedback: null,
-      // Données pour le feedback
-      userQuery: userMessage,
-      matchedQuestionId: firstMatch.id,
-      matchedQuestionTitle: firstMatch.question,
-      similarityScore: firstMatch.score,
-      responseTimeMs: Math.round(duration * 1000),
-    });
+      // ✅ Récupérer le premier match
+      const firstMatch = data.matches[0];
+
+      // Ajouter la réponse de l'assistant
+      messages.value.push({
+        type: 'assistant',
+        html: firstMatch.answer || '<p>Réponse non disponible</p>',
+        duration: duration,
+        feedback: null,
+        userQuery: userMessage,
+        matchedQuestionId: firstMatch.id,
+        matchedQuestionTitle: firstMatch.question,
+        similarityScore: firstMatch.score,
+        responseTimeMs: Math.round(duration * 1000),
+        llmProcessed: false,
+      });
+    }
 
     scrollToBottom();
   } catch (error) {
