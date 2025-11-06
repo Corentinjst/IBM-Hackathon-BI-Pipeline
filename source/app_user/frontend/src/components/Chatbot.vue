@@ -1,5 +1,18 @@
 <template>
   <div class="chatbot-container">
+    <!-- Support Form Modal -->
+    <transition name="modal-fade">
+      <div v-if="showSupportForm" class="modal-overlay" @click="closeSupportForm">
+        <div class="modal-container support-form-modal" @click.stop>
+          <SupportForm
+            :initialQuestion="currentUserQuery"
+            @cancel="closeSupportForm"
+            @success="handleSupportFormSuccess"
+          />
+        </div>
+      </div>
+    </transition>
+
     <!-- Header with Glassmorphism -->
     <div class="chat-header">
       <div class="header-content">
@@ -11,13 +24,10 @@
           </svg>
         </div>
         <div class="header-text">
-          <h2>Assistant IA</h2>
-          <p class="header-subtitle">Propulsé par RAG + LLM</p>
+          <h2>Help Center PULV</h2>
+          <p class="header-subtitle">Vous trouverez ici les réponses à toutes vos questions !</p>
         </div>
-        <div class="status-indicator">
-          <span class="status-dot"></span>
-          <span class="status-text">En ligne</span>
-        </div>
+
       </div>
     </div>
 
@@ -32,7 +42,7 @@
               </svg>
             </div>
           </div>
-          <h1 class="welcome-title">Bienvenue sur l'Assistant IA</h1>
+          <h1 class="welcome-title">Bienvenue sur le Help Center du Pôle Léonard de Vinci !</h1>
           <p class="welcome-description">Posez-moi vos questions ! J'utilise la technologie RAG (Retrieval Augmented Generation) avec traitement LLM pour fournir des réponses précises.</p>
 
           <!-- Popular Questions -->
@@ -276,6 +286,7 @@
 
 <script setup>
 import { ref, nextTick, onMounted } from 'vue';
+import SupportForm from './SupportForm.vue';
 
 // Configuration des URLs d'API
 const CHAT_API_URL = 'http://127.0.0.1:8000/ask';
@@ -291,6 +302,8 @@ const messagesContainer = ref(null);
 const popularQuestions = ref([]);
 const showSourceModal = ref(false);
 const selectedSource = ref(null);
+const showSupportForm = ref(false);
+const currentUserQuery = ref('');
 let timerInterval = null;
 
 // Fonction pour récupérer les questions populaires
@@ -354,6 +367,33 @@ const closeModal = () => {
   setTimeout(() => {
     selectedSource.value = null;
   }, 300); // Wait for animation to complete
+};
+
+// Function to open support form
+const openSupportForm = (query) => {
+  currentUserQuery.value = query;
+  showSupportForm.value = true;
+};
+
+// Function to close support form
+const closeSupportForm = () => {
+  showSupportForm.value = false;
+  setTimeout(() => {
+    currentUserQuery.value = '';
+  }, 300);
+};
+
+// Function to handle support form success
+const handleSupportFormSuccess = () => {
+  closeSupportForm();
+  // Optionally add a success message to the chat
+  messages.value.push({
+    type: 'assistant',
+    html: '<p style="color: #10b981;">✅ Votre ticket de support a été créé avec succès ! Nous vous contacterons prochainement.</p>',
+    duration: null,
+    feedback: null,
+  });
+  scrollToBottom();
 };
 
 // Fonction pour faire défiler vers le bas
@@ -438,7 +478,7 @@ const sendMessage = async () => {
       if (!answered || !data.answer_html) {
         messages.value.push({
           type: 'assistant',
-          html: data.answer_html || '<p style="color: #ef4444;">❌ No relevant answer found for your question.</p>',
+          html: data.answer_html || '<p style="color: #ef4444;">❌ Aucune réponse satisfaisante trouvée pour votre question.</p>',
           duration: duration,
           feedback: null,
           userQuery: userMessage,
@@ -446,8 +486,11 @@ const sendMessage = async () => {
           matchedQuestionTitle: null,
           similarityScore: null,
           responseTimeMs: Math.round(duration * 1000),
+          noAnswerFound: true,
         });
         scrollToBottom();
+        // Ouvrir automatiquement le formulaire de support
+        openSupportForm(userMessage);
         return;
       }
 
@@ -483,7 +526,7 @@ const sendMessage = async () => {
       if (!data.answer) {
         messages.value.push({
           type: 'assistant',
-          html: '<p style="color: #ef4444;">❌ No relevant answer found for your question.</p>',
+          html: '<p style="color: #ef4444;">❌ Aucune réponse satisfaisante trouvée pour votre question.</p>',
           duration: duration,
           feedback: null,
           userQuery: userMessage,
@@ -491,8 +534,10 @@ const sendMessage = async () => {
           matchedQuestionTitle: null,
           similarityScore: null,
           responseTimeMs: Math.round(duration * 1000),
+          noAnswerFound: true,
         });
         scrollToBottom();
+        openSupportForm(userMessage);
         return;
       }
 
@@ -518,7 +563,7 @@ const sendMessage = async () => {
       if (data.matches.length === 0) {
         messages.value.push({
           type: 'assistant',
-          html: '<p style="color: #ef4444;">❌ No relevant answer found for your question.</p>',
+          html: '<p style="color: #ef4444;">❌ Aucune réponse satisfaisante trouvée pour votre question.</p>',
           duration: duration,
           feedback: null,
           userQuery: userMessage,
@@ -526,8 +571,10 @@ const sendMessage = async () => {
           matchedQuestionTitle: null,
           similarityScore: null,
           responseTimeMs: Math.round(duration * 1000),
+          noAnswerFound: true,
         });
         scrollToBottom();
+        openSupportForm(userMessage);
         return;
       }
 
@@ -1767,6 +1814,13 @@ onMounted(() => {
 
 .modal-body::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Support Form Modal */
+.support-form-modal {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
 }
 
 /* ============================================

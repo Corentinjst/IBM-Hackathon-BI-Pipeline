@@ -59,12 +59,60 @@ router.post('/feedback', async (req, res) => {
       response_time_ms || null
     ]);
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Feedback enregistré avec succès',
       id: result.insertId
     });
   } catch (err) {
     console.error('Erreur lors de l\'enregistrement du feedback:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST - Créer un ticket de support
+router.post('/support-ticket', async (req, res) => {
+  try {
+    const {
+      user_email,
+      user_school,
+      user_type,
+      question
+    } = req.body;
+
+    // Validation : tous les champs sont obligatoires
+    if (!user_email || !user_school || !user_type || !question) {
+      return res.status(400).json({
+        error: 'Tous les champs sont obligatoires (user_email, user_school, user_type, question)'
+      });
+    }
+
+    // Validation de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(user_email)) {
+      return res.status(400).json({ error: 'Format d\'email invalide' });
+    }
+
+    const pool = getPool();
+    const [result] = await pool.query(`
+      INSERT INTO support_tickets (
+        user_email,
+        user_school,
+        user_type,
+        question
+      ) VALUES (?, ?, ?, ?)
+    `, [
+      user_email,
+      user_school,
+      user_type,
+      question
+    ]);
+
+    res.status(201).json({
+      message: 'Ticket de support créé avec succès',
+      id: result.insertId
+    });
+  } catch (err) {
+    console.error('Erreur lors de la création du ticket de support:', err);
     res.status(500).json({ error: err.message });
   }
 });
