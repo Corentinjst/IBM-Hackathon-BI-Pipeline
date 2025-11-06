@@ -17,6 +17,12 @@
           >
             📝 Gérer les Questions
           </button>
+          <button 
+            :class="['nav-btn', { active: currentPage === 'forms' }]"
+            @click="currentPage = 'forms'"
+          >
+            📋 Tickets de Support
+          </button>
         </nav>
       </div>
     </header>
@@ -27,6 +33,8 @@
       <Dashboard v-if="currentPage === 'dashboard'" />
       <!-- Page Gestion des Questions -->
       <Questions v-if="currentPage === 'questions'" />
+      <!-- Page Tickets de Support -->
+      <Forms v-if="currentPage === 'forms'" />
     </main>
   </div>
 </template>
@@ -35,6 +43,7 @@
 import { ref } from 'vue';
 import Questions from '@/components/Questions.vue';
 import Dashboard from '@/components/Dashboard.vue';
+import Forms from '@/components/Forms.vue';
 
 const currentPage = ref('dashboard');
 </script>

@@ -4,6 +4,7 @@ const cors = require('cors');
 const { initDatabase } = require('./db');
 const questionsRoutes = require('./routes/questions');
 const dashboardRoutes = require('./routes/dashboard');
+const formsRoutes = require('./routes/forms');
 
 require('dotenv').config({ path: '../../.env' });
 
@@ -14,6 +15,7 @@ app.use(express.json());
 // Routes
 app.use('/api/questions', questionsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/forms', formsRoutes);
 
 const PORT = process.env.ADMIN_PORT || 4000;
 
