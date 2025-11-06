@@ -87,7 +87,7 @@
 import { ref, nextTick, onMounted } from 'vue';
 
 // Configuration des URLs d'API
-const CHAT_API_URL = 'https://votre-api.com/chat'; // À remplacer par votre URL
+const CHAT_API_URL = 'http://127.0.0.1:8000/ask'; 
 const FEEDBACK_API_URL = 'http://localhost:3000/api/dashboard/feedback'; // URL pour le feedback
 const POPULAR_QUESTIONS_API_URL = 'http://localhost:3000/api/dashboard/questions'; // URL pour les questions populaires
 
@@ -200,18 +200,38 @@ const sendMessage = async () => {
     // Retirer l'indicateur de chargement
     messages.value.pop();
 
-    // Ajouter la réponse de l'assistant avec toutes les données nécessaires pour le feedback
+    // ✅ Vérifier que matches existe et n'est pas vide
+    if (!data.matches || data.matches.length === 0) {
+      messages.value.push({
+        type: 'assistant',
+        html: '<p style="color: #e74c3c;">❌ Aucune réponse trouvée pour votre question.</p>',
+        duration: duration,
+        feedback: null,
+        userQuery: userMessage,
+        matchedQuestionId: null,
+        matchedQuestionTitle: null,
+        similarityScore: null,
+        responseTimeMs: Math.round(duration * 1000),
+      });
+      scrollToBottom();
+      return;
+    }
+    
+    // ✅ Récupérer le premier match
+    const firstMatch = data.matches[0];
+
+    // Ajouter la réponse de l'assistant
     messages.value.push({
       type: 'assistant',
-      html: data.response || data.html || '<p>Réponse non disponible</p>',
+      html: firstMatch.answer || '<p>Réponse non disponible</p>', // ✅ Utiliser 'answer'
       duration: duration,
       feedback: null,
       // Données pour le feedback
-      userQuery: userMessage, // Question de l'utilisateur
-      matchedQuestionId: data.matched_question_id || null, // ID de la question matchée (retourné par l'API)
-      matchedQuestionTitle: data.matched_question_title || null, // Titre de la question matchée (retourné par l'API)
-      similarityScore: data.similarity_score || null, // Score de similarité (retourné par l'API)
-      responseTimeMs: Math.round(duration * 1000), // Temps de réponse en millisecondes
+      userQuery: userMessage,
+      matchedQuestionId: firstMatch.id,
+      matchedQuestionTitle: firstMatch.question,
+      similarityScore: firstMatch.score,
+      responseTimeMs: Math.round(duration * 1000),
     });
 
     scrollToBottom();
