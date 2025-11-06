@@ -2,7 +2,7 @@
   <div class="dashboard">
     <h1>📊 Dashboard - Analyse des réponses</h1>
 
-    <!-- Première ligne : Camembert + Requêtes par jour -->
+    <!-- Première ligne : Camembert + Quadrant -->
     <div class="main-row">
       <!-- 1. Camembert -->
       <div class="card small-pie-card">
@@ -10,12 +10,11 @@
         <canvas id="pieChart"></canvas>
       </div>
 
-      <!-- 2. Utilité vs Score de similarité -->
+      <!-- 2. Quadrant Satisfaction vs Similarité -->
       <div class="card">
-        <h2>2️⃣ Utilité vs Score de similarité</h2>
-        <canvas id="scatterPlot"></canvas>
+        <h2>2️⃣ Analyse Satisfaction vs Similarité</h2>
+        <canvas id="quadrantChart"></canvas>
       </div>
-
     </div>
 
     <!-- Deuxième ligne : Questions plus/moins posées -->
@@ -33,7 +32,7 @@
       </div>
     </div>
 
-    <!-- Troisième ligne : Temps de réponse + Scatter plot -->
+    <!-- Troisième ligne : Temps de réponse + Requêtes par jour -->
     <div class="main-row">
       <!-- 5. Temps de réponse moyen par jour -->
       <div class="card">
@@ -41,12 +40,11 @@
         <canvas id="responseTimeChart"></canvas>
       </div>
 
-      <!-- 2. Nombre de requêtes par jour -->
+      <!-- 6. Nombre de requêtes par jour -->
       <div class="card">
         <h2>6️⃣ Nombre de requêtes par jour</h2>
         <canvas id="requestsPerDayChart"></canvas>
       </div>
-      
     </div>
   </div>
 </template>
@@ -108,12 +106,147 @@ const createCharts = () => {
     }
   });
 
-  // --- 2. Nombre de requêtes par jour ---
+  // --- 2. Graphique en quadrant Satisfaction vs Similarité ---
+  const quadrantData = feedbackData.value
+    .filter(d => d.similarity_score !== null && d.was_helpful !== null)
+    .map(d => ({
+      x: d.similarity_score,
+      y: d.was_helpful,
+      question: d.user_query || 'Question non disponible',
+      matchedQuestion: d.matched_question_title || 'Non matchée',
+      responseTime: d.response_time_ms,
+      category: getCategory(d.similarity_score, d.was_helpful)
+    }));
+
+  function getCategory(similarity, helpful) {
+    if (helpful === 1) {
+      return similarity >= 0.7 ? 'Parfait' : 'Questions mal posées';
+    } else {
+      return similarity >= 0.7 ? 'Problème' : 'A retravailler';
+    }
+  }
+
+  const categoryCounts = {
+    'Parfait': quadrantData.filter(d => d.category === 'Parfait').length,
+    'Questions mal posées': quadrantData.filter(d => d.category === 'Questions mal posées').length,
+    'Problème': quadrantData.filter(d => d.category === 'Problème').length,
+    'A retravailler': quadrantData.filter(d => d.category === 'A retravailler').length
+  };
+
+  const categoryColors = {
+    'Parfait': 'rgba(76, 175, 80, 0.7)',           // Vert
+    'Questions mal posées': 'rgba(255, 193, 7, 0.7)', // Jaune
+    'A retravailler': 'rgba(255, 152, 0, 0.7)',    // Orange
+    'Problème': 'rgba(244, 67, 54, 0.7)'          // Rouge
+  };
+
+  const categoryDescriptions = {
+    'Parfait': `Similarité ≥ 0.7 + Utile\n(${categoryCounts['Parfait']} réponses)`,
+    'Questions mal posées': `Similarité < 0.7 + Utile\n(${categoryCounts['Questions mal posées']} réponses)`,
+    'Problème': `Similarité ≥ 0.7 + Non utile\n(${categoryCounts['Problème']} réponses)`,
+    'A retravailler': `Similarité < 0.7 + Non utile\n(${categoryCounts['A retravailler']} réponses)`
+  };
+
+  new Chart(document.getElementById("quadrantChart"), {
+    type: "scatter",
+    data: {
+      datasets: [
+        {
+          label: categoryDescriptions['Parfait'],
+          data: quadrantData.filter(d => d.category === 'Parfait'),
+          backgroundColor: categoryColors['Parfait'],
+          pointRadius: 8
+        },
+        {
+          label: categoryDescriptions['Questions mal posées'],
+          data: quadrantData.filter(d => d.category === 'Questions mal posées'),
+          backgroundColor: categoryColors['Questions mal posées'],
+          pointRadius: 8
+        },
+        {
+          label: categoryDescriptions['A retravailler'],
+          data: quadrantData.filter(d => d.category === 'A retravailler'),
+          backgroundColor: categoryColors['A retravailler'],
+          pointRadius: 8
+        },
+        {
+          label: categoryDescriptions['Problème'],
+          data: quadrantData.filter(d => d.category === 'Problème'),
+          backgroundColor: categoryColors['Problème'],
+          pointRadius: 8
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const point = context.raw;
+              return [
+                `Catégorie: ${point.category}`,
+                `Question des utilisateurs: ${point.question.substring(0, 80)}${point.question.length > 80 ? '...' : ''}`,
+                `Question matchée: ${point.matchedQuestion}`,
+                `Similarité: ${point.x.toFixed(3)}`,
+                `Utilité: ${point.y === 1 ? 'Utile' : 'Non utile'}`,
+                `Temps réponse: ${point.responseTime}ms`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: "Score de similarité"
+          },
+          min: 0,
+          max: 1,
+          grid: {
+            color: function(context) {
+              return context.tick.value === 0.7 ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)';
+            },
+            lineWidth: function(context) {
+              return context.tick.value === 0.7 ? 2 : 1;
+            }
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: "Utilité"
+          },
+          ticks: {
+            callback: function(value) {
+              return value === 1 ? 'Utile' : value === 0 ? 'Non utile' : '';
+            }
+          },
+          min: -0.5,
+          max: 1.5,
+          grid: {
+            color: function(context) {
+              return context.tick.value === 0.5 ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)';
+            },
+            lineWidth: function(context) {
+              return context.tick.value === 0.5 ? 2 : 1;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // --- 3. Nombre de requêtes par jour ---
   const requestsByDay = {};
   
   feedbackData.value.forEach(d => {
     if (d.timestamp) {
-      const date = new Date(d.timestamp).toISOString().split('T')[0]; // YYYY-MM-DD
+      const date = new Date(d.timestamp).toISOString().split('T')[0];
       requestsByDay[date] = (requestsByDay[date] || 0) + 1;
     }
   });
@@ -156,7 +289,7 @@ const createCharts = () => {
     }
   });
 
-  // --- 3. Questions les plus posées ---
+  // --- 4. Questions les plus posées ---
   const questionCount = {};
   
   feedbackData.value.forEach(d => {
@@ -192,7 +325,7 @@ const createCharts = () => {
     }
   });
 
-  // --- 4. Questions les moins posées (bottom 5) ---
+  // --- 5. Questions les moins posées (bottom 5) ---
   const leastQuestions = sortedQuestions.slice(-5).reverse();
   new Chart(document.getElementById("leastAskedChart"), {
     type: "bar",
@@ -216,7 +349,7 @@ const createCharts = () => {
     }
   });
 
-  // --- 5. Temps de réponse moyen par jour ---
+  // --- 6. Temps de réponse moyen par jour ---
   const responseTimesByDay = {};
   
   feedbackData.value.forEach(d => {
@@ -268,70 +401,6 @@ const createCharts = () => {
       }
     }
   });
-
-  // --- 6. Scatter plot Utilité vs Score de similarité ---
-  const scatterData = feedbackData.value
-    .filter(d => d.similarity_score !== null && d.was_helpful !== null)
-    .map(d => ({
-      x: d.similarity_score,
-      y: d.was_helpful,
-      helpfulText: d.was_helpful === 1 ? 'Utile' : 'Non utile'
-    }));
-
-  new Chart(document.getElementById("scatterPlot"), {
-    type: "scatter",
-    data: {
-      datasets: [
-        {
-          label: "Utile",
-          data: scatterData.filter(d => d.y === 1),
-          backgroundColor: "rgba(76, 175, 80, 0.7)",
-          pointRadius: 6
-        },
-        {
-          label: "Non utile",
-          data: scatterData.filter(d => d.y === 0),
-          backgroundColor: "rgba(244, 67, 54, 0.7)",
-          pointRadius: 6
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        x: {
-          title: {
-            display: true,
-            text: "Score de similarité"
-          },
-          min: 0,
-          max: 1
-        },
-        y: {
-          title: {
-            display: true,
-            text: "Utilité"
-          },
-          ticks: {
-            callback: function(value) {
-              return value === 1 ? 'Utile' : value === 0 ? 'Non utile' : '';
-            }
-          },
-          min: -0.5,
-          max: 1.5
-        }
-      },
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return `Score: ${context.parsed.x.toFixed(3)}, ${context.dataset.label}`;
-            }
-          }
-        }
-      }
-    }
-  });
 };
 
 onMounted(() => {
@@ -377,7 +446,7 @@ h1 {
   border-radius:15px;
   box-shadow:0 4px 10px rgba(0,0,0,0.1);
   flex: 1 1 400px;
-  max-width: 450px; /* Limite la largeur pour le camembert */
+  max-width: 450px;
 }
 
 /* Canvas responsive */
@@ -385,6 +454,4 @@ canvas {
   max-width:100%;
   height:300px;
 }
-
-
 </style>
