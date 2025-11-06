@@ -15,8 +15,8 @@ app.use(express.json());
 app.use('/api/questions', questionsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.ADMIN_PORT || 4000;
 
 initDatabase().then(() => {
-  app.listen(PORT, () => console.log(`✓ Serveur démarré sur http://localhost:${PORT}`));
+  app.listen(PORT, () => console.log(`✓ [ADMIN] Serveur démarré sur http://localhost:${PORT}`));
 });

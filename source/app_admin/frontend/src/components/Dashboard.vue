@@ -62,7 +62,7 @@ const feedbackData = ref([]);
 // Charger les données du feedback
 const loadData = async () => {
   try {
-    const res = await axios.get('http://localhost:3000/api/dashboard');
+    const res = await axios.get('http://localhost:4000/api/dashboard');
     feedbackData.value = res.data;
     createCharts();
   } catch (err) {

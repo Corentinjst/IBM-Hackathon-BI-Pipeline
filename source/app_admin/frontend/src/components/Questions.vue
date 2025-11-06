@@ -279,7 +279,7 @@ const form = ref({
 const loadQuestions = async () => {
   isLoading.value = true; // Activer le loading
   try {
-    const res = await axios.get('http://localhost:3000/api/questions');
+    const res = await axios.get('http://localhost:4000/api/questions');
     questions.value = res.data;
   } catch (err) {
     console.error(err);
@@ -496,10 +496,10 @@ const submitForm = async () => {
   isLoading.value = true; // Activer le loading
   try {
     if (editingQuestion.value) {
-      await axios.put(`http://localhost:3000/api/questions/${editingQuestion.value.id}`, form.value);
+      await axios.put(`http://localhost:4000/api/questions/${editingQuestion.value.id}`, form.value);
       alert('Question mise à jour');
     } else {
-      await axios.post('http://localhost:3000/api/questions', form.value);
+      await axios.post('http://localhost:4000/api/questions', form.value);
       alert('Question ajoutée');
     }
     showForm.value = false;
@@ -531,7 +531,7 @@ const deleteQuestion = async (id) => {
   if (!confirm('Voulez-vous vraiment supprimer cette question ?')) return;
   isLoading.value = true; // Activer le loading
   try {
-    await axios.delete(`http://localhost:3000/api/questions/${id}`);
+    await axios.delete(`http://localhost:4000/api/questions/${id}`);
     alert('Question supprimée');
     loadQuestions();
   } catch (err) {

@@ -13,8 +13,8 @@ app.use(express.json());
 
 app.use('/api/dashboard', dashboardRoutes);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.USER_PORT || 3000;
 
 initDatabase().then(() => {
-  app.listen(PORT, () => console.log(`✓ Serveur démarré sur http://localhost:${PORT}`));
+  app.listen(PORT, () => console.log(`✓ [USER] Serveur démarré sur http://localhost:${PORT}`));
 });
