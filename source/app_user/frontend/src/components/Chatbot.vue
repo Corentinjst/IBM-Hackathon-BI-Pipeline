@@ -352,11 +352,43 @@ const expandSource = async (source) => {
     return;
   }
 
-  // Otherwise, we need to fetch it from the raw_matches or backend
-  // For now, we'll use what we have
+  // If we have a URL, try to fetch the content from it
+  if (source.url) {
+    try {
+      // Show modal with loading state
+      selectedSource.value = {
+        ...source,
+        answer: '<p style="color: #64748b;">Chargement du contenu...</p>'
+      };
+      showSourceModal.value = true;
+
+      // Fetch the full content from the URL
+      const response = await fetch(source.url);
+      if (!response.ok) {
+        throw new Error('Impossible de récupérer le contenu');
+      }
+
+      const data = await response.json();
+
+      // Update the modal with the fetched content
+      selectedSource.value = {
+        ...source,
+        answer: data.answer_html || data.answer || '<p>Contenu non disponible</p>'
+      };
+    } catch (error) {
+      console.error('Error fetching source content:', error);
+      selectedSource.value = {
+        ...source,
+        answer: '<p style="color: #ef4444;">Impossible de charger le contenu de cette source.</p>'
+      };
+    }
+    return;
+  }
+
+  // Otherwise, we'll use what we have (fallback)
   selectedSource.value = {
     ...source,
-    answer: source.answer || '<p>Answer content not available in current response format.</p>'
+    answer: source.answer || '<p>Contenu de la réponse non disponible dans le format actuel.</p>'
   };
   showSourceModal.value = true;
 };
@@ -498,8 +530,9 @@ const sendMessage = async () => {
       const sources = data.citations ? data.citations.map(cite => ({
         id: cite.id,
         question: cite.title,
-        score: null, // Score not provided in new schema
-        url: cite.url
+        score: cite.score || null,
+        url: cite.url,
+        answer: cite.answer // ✅ Include answer directly from backend
       })) : [];
 
       const primarySource = sources.length > 0 ? sources[0] : null;
