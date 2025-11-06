@@ -1557,6 +1557,16 @@ onMounted(() => {
   animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.support-form-container {
+  overflow: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE et Edge */
+}
+
+.support-form-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari et Opera */
+}
+
 @keyframes modalSlideIn {
   from {
     opacity: 0;
