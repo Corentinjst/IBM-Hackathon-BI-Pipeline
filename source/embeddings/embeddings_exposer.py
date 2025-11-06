@@ -4,6 +4,7 @@ import mysql.connector
 from elasticsearch import Elasticsearch
 import openai
 import os
+import json
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -89,82 +90,127 @@ def generate_embedding(text: str):
 
 def llm_process_results(user_query: str, matches: list):
     """
-    Use LLM to select the most relevant information from top matches
-    and generate a coherent answer.
+    Use LLM to synthesize an answer from the top Elasticsearch matches,
+    following a standardized JSON output schema for front-end consumption.
     """
+
+    # ✅ Handle no matches
     if not matches:
         return {
-            "answer": "I couldn't find any relevant information to answer your question.",
-            "sources": [],
-            "llm_processed": True
+            "language": "fr",
+            "answered": False,
+            "answer_html": "<p>Je n’ai pas trouvé d’information fiable dans la base de connaissances.</p>"
+                           "<p>Pour obtenir une réponse, utilise ce canal : "
+                           "<a href='https://example.com/contact'>Formulaire de contact</a>.</p>",
+            "reason_if_unanswered": "Aucun extrait pertinent n'a été trouvé.",
+            "used_source_ids": [],
+            "citations": [],
+            "meta": {"query_echo": user_query, "notes": "No matches found"},
+            "redirect": {
+                "needed": True,
+                "label": "Formulaire de contact",
+                "url": "https://example.com/contact"
+            }
         }
 
-    # Build context from top matches
-    context_parts = []
-    for i, match in enumerate(matches, 1):
-        context_parts.append(
-            f"[Source {i}] (Score: {match['score']:.3f})\n"
-            f"Question: {match['question']}\n"
-            f"Answer: {match['answer']}\n"
-        )
+    # ✅ Build structured context for LLM
+    excerpts = [
+        {
+            "id": match["id"],
+            "title": match["question"],
+            "url": None,
+            "content": match["answer"],
+            "language": "fr"  # Adapt if your data includes 'langues'
+        }
+        for match in matches
+    ]
 
-    context = "\n---\n".join(context_parts)
+    fallback = {"label": "Formulaire de contact", "url": "https://example.com/contact"}
 
-    # Create prompt for LLM
-    system_prompt = """You are a helpful assistant that answers questions based on a knowledge base of FAQs.
-You will be given the user's question and the top 5 most similar FAQ entries from the database.
+    # ✅ System Prompt
+    system_prompt = (
+        "Rôle : Tu es l’assistant officiel du Help Center PLV. "
+        "Objectif : Produire la meilleure réponse possible STRICTEMENT à partir des extraits fournis.\n\n"
+        "Entrées : \n"
+        "- user_question : la question utilisateur.\n"
+        "- excerpts : liste d’extraits autorisés, chacun sous la forme :\n"
+        "  { 'id': 'string', 'title': 'string', 'url': 'string|null', 'content': 'string', 'language': 'string' }\n"
+        "- fallback : { 'label': 'string', 'url': 'string' }\n\n"
+        "Règles :\n"
+        "- Réponds uniquement à partir des excerpts. N’invente rien.\n"
+        "- Si l’information n’est pas présente ou insuffisante, dis-le et propose la redirection (fallback).\n"
+        "- Cite toutes les affirmations factuelles par [⟨titre/section⟩].\n"
+        "- Le contenu doit être du HTML propre (<p>, <ul>, <ol>, <strong>, <a>, etc.).\n"
+        "- Langue = celle de la question (FR par défaut). Ton : clair, concis, bienveillant.\n"
+        "- S’il existe plusieurs procédures, commence par un résumé puis des étapes numérotées.\n"
+        "- Sortie unique : retourne EXACTEMENT un objet JSON (aucun texte avant ou après, aucun Markdown).\n\n"
+        "Format JSON attendu :\n"
+        "{\n"
+        '  "language": "fr",\n'
+        '  "answered": true,\n'
+        '  "answer_html": "<p><strong>Réponse courte :</strong> …</p><ol>…</ol>",\n'
+        '  "reason_if_unanswered": null,\n'
+        '  "used_source_ids": ["doc_017", "doc_042"],\n'
+        '  "citations": [{"id": "doc_017", "title": "Procédure", "url": "https://..." }],\n'
+        '  "meta": {"query_echo": "question utilisateur normalisée", "notes": "…"},\n'
+        '  "redirect": {"needed": false, "label": null, "url": null}\n'
+        "}"
+    )
 
-Your task is to:
-1. Analyze which FAQ entries are most relevant to the user's question
-2. Synthesize the information from the most relevant sources into a clear, coherent answer
-3. If multiple sources contain useful information, combine them intelligently
-4. If none of the sources are truly relevant (all have low scores or unrelated content), politely say so
-5. Keep your answer concise but complete
+    # ✅ User Prompt (as JSON string for better parsing)
+    user_prompt = {
+        "user_question": user_query,
+        "excerpts": excerpts,
+        "fallback": fallback
+    }
 
-Format your response naturally and directly answer the user's question."""
-
-    user_prompt = f"""User Question: {user_query}
-
-Available FAQ Sources:
-{context}
-
-Based on the above sources, please provide the best answer to the user's question. Focus on the most relevant information and synthesize it into a helpful response."""
-
+    # ✅ LLM call with response_format for JSON
     try:
         response = openai.chat.completions.create(
-            model="gpt-4o-mini",  # Fast and cost-effective
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": json.dumps(user_prompt, ensure_ascii=False)}
             ],
-            temperature=0.3,  # Lower temperature for more focused answers
-            max_tokens=500
+            temperature=0.2,
+            max_tokens=800,
+            response_format={"type": "json_object"}  # Force JSON output
         )
 
-        llm_answer = response.choices[0].message.content
+        content = response.choices[0].message.content.strip()
 
-        return {
-            "answer": llm_answer,
-            "sources": [
-                {
-                    "id": match["id"],
-                    "question": match["question"],
-                    "score": match["score"]
-                }
-                for match in matches
-            ],
-            "llm_processed": True,
-            "raw_matches": matches  # Keep original matches for debugging
-        }
+        print("LLM Raw Response:", content)  # For debugging
+
+        # ✅ Parse JSON safely
+        try:
+            result_json = json.loads(content)
+        except json.JSONDecodeError:
+            # fallback if not strictly JSON
+            result_json = {
+                "language": "fr",
+                "answered": True,
+                "answer_html": f"<p>{content}</p>",
+                "reason_if_unanswered": None,
+                "used_source_ids": [m['id'] for m in matches],
+                "citations": [{"id": m['id'], "title": m['question'], "url": None} for m in matches],
+                "meta": {"query_echo": user_query, "notes": "Non-JSON fallback"},
+                "redirect": {"needed": False, "label": None, "url": None}
+            }
+
+        return result_json
 
     except Exception as e:
-        # Fallback to first match if LLM fails
+        # Fallback to the best match if API fails
         return {
-            "answer": matches[0]["answer"],
-            "sources": [{"id": matches[0]["id"], "question": matches[0]["question"], "score": matches[0]["score"]}],
-            "llm_processed": False,
-            "error": str(e),
-            "raw_matches": matches
+            "language": "fr",
+            "answered": True,
+            "answer_html": f"<p>{matches[0]['answer']}</p>",
+            "reason_if_unanswered": None,
+            "used_source_ids": [matches[0]["id"]],
+            "citations": [{"id": matches[0]["id"], "title": matches[0]["question"], "url": None}],
+            "meta": {"query_echo": user_query, "notes": "LLM error fallback"},
+            "redirect": {"needed": False, "label": None, "url": None},
+            "error": str(e)
         }
 
 
