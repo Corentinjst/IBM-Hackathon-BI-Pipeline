@@ -1,6 +1,6 @@
 <template>
   <div class="chatbot-container">
-    <!-- Enhanced Header with Glassmorphism -->
+    <!-- Header with Glassmorphism -->
     <div class="chat-header">
       <div class="header-content">
         <div class="header-icon">
@@ -11,43 +11,37 @@
           </svg>
         </div>
         <div class="header-text">
-          <h2>AI Assistant</h2>
-          <p class="header-subtitle">Powered by RAG + LLM</p>
+          <h2>Assistant IA</h2>
+          <p class="header-subtitle">Propulsé par RAG + LLM</p>
         </div>
         <div class="status-indicator">
           <span class="status-dot"></span>
-          <span class="status-text">Online</span>
+          <span class="status-text">En ligne</span>
         </div>
       </div>
     </div>
 
     <div class="chat-messages" ref="messagesContainer">
       <div class="messages-inner">
-        <!-- Enhanced Welcome Screen -->
+        <!-- Welcome Screen -->
         <div v-if="messages.length === 0" class="welcome-screen">
           <div class="welcome-icon">
             <div class="welcome-icon-wrapper">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="url(#gradient1)"/>
-                <defs>
-                  <linearGradient id="gradient1" x1="2" y1="2" x2="22" y2="22">
-                    <stop offset="0%" stop-color="#667eea"/>
-                    <stop offset="100%" stop-color="#764ba2"/>
-                  </linearGradient>
-                </defs>
+                <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="#667eea"/>
               </svg>
             </div>
           </div>
-          <h1 class="welcome-title">Welcome to AI Assistant</h1>
-          <p class="welcome-description">Ask me anything! I use advanced RAG (Retrieval Augmented Generation) with LLM processing to provide accurate answers.</p>
+          <h1 class="welcome-title">Bienvenue sur l'Assistant IA</h1>
+          <p class="welcome-description">Posez-moi vos questions ! J'utilise la technologie RAG (Retrieval Augmented Generation) avec traitement LLM pour fournir des réponses précises.</p>
 
-          <!-- Popular Questions with Enhanced Design -->
+          <!-- Popular Questions -->
           <div v-if="popularQuestions.length > 0" class="popular-questions">
             <h3 class="section-title">
               <svg class="title-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
               </svg>
-              Popular Questions
+              Questions populaires
             </h3>
             <div class="questions-grid">
               <button
@@ -86,30 +80,16 @@
             </div>
           </div>
 
-          <!-- Assistant Message with Enhanced Design -->
+          <!-- Assistant Message -->
           <div v-else-if="message.type === 'assistant'" class="message-wrapper assistant-message">
             <div class="message-avatar assistant-avatar">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="url(#gradientAvatar)"/>
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="#667eea"/>
                 <circle cx="12" cy="10" r="3" fill="white"/>
                 <path d="M12 14C9 14 6.5 15.5 6.5 17.5V18.5H17.5V17.5C17.5 15.5 15 14 12 14Z" fill="white"/>
-                <defs>
-                  <linearGradient id="gradientAvatar" x1="2" y1="2" x2="22" y2="22">
-                    <stop offset="0%" stop-color="#667eea"/>
-                    <stop offset="100%" stop-color="#764ba2"/>
-                  </linearGradient>
-                </defs>
               </svg>
             </div>
             <div class="message-content assistant-content">
-              <!-- LLM Badge -->
-              <div v-if="message.llmProcessed" class="llm-badge">
-                <svg class="badge-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="currentColor"/>
-                </svg>
-                <span>AI Enhanced</span>
-              </div>
-
               <div v-html="message.html" class="html-content"></div>
 
               <!-- Sources Section (for LLM-processed messages) -->
@@ -138,7 +118,7 @@
               </div>
 
               <!-- Metadata Footer -->
-              <div class="message-footer">
+              <div class="message-footer" v-if="message.matchedQuestionId">
                 <div class="metadata">
                   <span v-if="message.duration" class="duration">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -148,12 +128,12 @@
                   </span>
                 </div>
 
-                <!-- Enhanced Feedback Buttons -->
+                <!-- Feedback Buttons -->
                 <div v-if="!message.feedback" class="feedback-buttons">
                   <button
                     @click="sendFeedback(index, 'up')"
                     class="feedback-btn thumbs-up"
-                    title="Helpful"
+                    title="Utile"
                   >
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M1 21H4V9H1V21ZM23 10C23 8.9 22.1 8 21 8H14.69L15.64 3.43L15.67 3.11C15.67 2.7 15.5 2.32 15.23 2.05L14.17 1L7.59 7.59C7.22 7.95 7 8.45 7 9V19C7 20.1 7.9 21 9 21H18C18.83 21 19.54 20.5 19.84 19.78L22.86 12.73C22.95 12.5 23 12.26 23 12V10Z" fill="currentColor"/>
@@ -162,7 +142,7 @@
                   <button
                     @click="sendFeedback(index, 'down')"
                     class="feedback-btn thumbs-down"
-                    title="Not helpful"
+                    title="Pas utile"
                   >
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M15 3H6C5.17 3 4.46 3.5 4.16 4.22L1.14 11.27C1.05 11.5 1 11.74 1 12V14C1 15.1 1.9 16 3 16H9.31L8.36 20.57L8.33 20.89C8.33 21.3 8.5 21.68 8.77 21.95L9.83 23L16.41 16.41C16.78 16.05 17 15.55 17 15V5C17 3.9 16.1 3 15 3ZM19 3V15H23V3H19Z" fill="currentColor"/>
@@ -173,25 +153,19 @@
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="currentColor"/>
                   </svg>
-                  <span>Thanks for your feedback!</span>
+                  <span>Merci pour votre retour !</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Enhanced Loading State -->
+          <!-- Loading State -->
           <div v-else-if="message.type === 'loading'" class="message-wrapper assistant-message">
             <div class="message-avatar assistant-avatar">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="url(#gradientAvatar2)"/>
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="#667eea"/>
                 <circle cx="12" cy="10" r="3" fill="white"/>
                 <path d="M12 14C9 14 6.5 15.5 6.5 17.5V18.5H17.5V17.5C17.5 15.5 15 14 12 14Z" fill="white"/>
-                <defs>
-                  <linearGradient id="gradientAvatar2" x1="2" y1="2" x2="22" y2="22">
-                    <stop offset="0%" stop-color="#667eea"/>
-                    <stop offset="100%" stop-color="#764ba2"/>
-                  </linearGradient>
-                </defs>
               </svg>
             </div>
             <div class="message-content loading-content">
@@ -200,7 +174,7 @@
                   <div class="dot-pulse__dot"></div>
                 </div>
               </div>
-              <div class="loading-text">AI is thinking...</div>
+              <div class="loading-text">L'IA réfléchit...</div>
               <div class="timer-display">{{ timer.toFixed(1) }}s</div>
             </div>
           </div>
@@ -208,21 +182,75 @@
       </div>
     </div>
 
-    <!-- Enhanced Input Area -->
+    <!-- Source Modal -->
+    <transition name="modal-fade">
+      <div v-if="showSourceModal" class="modal-overlay" @click="closeModal">
+        <div class="modal-container" @click.stop>
+          <div class="modal-header">
+            <div class="modal-title-wrapper">
+              <svg class="modal-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2ZM16 18H8V16H16V18ZM16 14H8V12H16V14ZM13 9V3.5L18.5 9H13Z" fill="currentColor"/>
+              </svg>
+              <div>
+                <h3>Document source</h3>
+                <p class="modal-subtitle">Contenu original de la FAQ</p>
+              </div>
+            </div>
+            <button class="modal-close" @click="closeModal" title="Close">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="modal-body" v-if="selectedSource">
+            <div class="source-meta">
+              <div class="meta-item">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 19H11V17H13V19ZM15.07 11.25L14.17 12.17C13.45 12.9 13 13.5 13 15H11V14.5C11 13.4 11.45 12.4 12.17 11.67L13.41 10.41C13.78 10.05 14 9.55 14 9C14 7.9 13.1 7 12 7C10.9 7 10 7.9 10 9H8C8 6.79 9.79 5 12 5C14.21 5 16 6.79 16 9C16 9.88 15.64 10.68 15.07 11.25Z" fill="currentColor"/>
+                </svg>
+                <span class="meta-label">ID Question :</span>
+                <span class="meta-value">{{ selectedSource.id }}</span>
+              </div>
+              <div class="meta-item" v-if="selectedSource.score">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z" fill="currentColor"/>
+                </svg>
+                <span class="meta-label">Score de similarité :</span>
+                <span class="meta-value">{{ ((selectedSource.score - 1) * 100).toFixed(1) }}%</span>
+              </div>
+            </div>
+
+            <div class="source-question">
+              <h4>Question</h4>
+              <p>{{ selectedSource.question }}</p>
+            </div>
+
+            <div class="source-answer">
+              <h4>Réponse</h4>
+              <div class="answer-content" v-html="selectedSource.answer || 'Aucune réponse disponible'"></div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="modal-btn modal-btn-secondary" @click="closeModal">
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Input Area -->
     <div class="chat-input-wrapper">
       <div class="chat-input-container">
         <div class="input-group">
-          <button class="attach-btn" title="Attach file (Coming soon)" disabled>
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16.5 6V17.5C16.5 19.71 14.71 21.5 12.5 21.5C10.29 21.5 8.5 19.71 8.5 17.5V5C8.5 3.62 9.62 2.5 11 2.5C12.38 2.5 13.5 3.62 13.5 5V15.5C13.5 16.05 13.05 16.5 12.5 16.5C11.95 16.5 11.5 16.05 11.5 15.5V6H10V15.5C10 16.88 11.12 18 12.5 18C13.88 18 15 16.88 15 15.5V5C15 2.79 13.21 1 11 1C8.79 1 7 2.79 7 5V17.5C7 20.54 9.46 23 12.5 23C15.54 23 18 20.54 18 17.5V6H16.5Z" fill="currentColor"/>
-            </svg>
-          </button>
           <input
             v-model="userInput"
             @keyup.enter="sendMessage"
             @input="handleInput"
             :disabled="isLoading"
-            placeholder="Type your question here..."
+            placeholder="Posez votre question ici..."
             type="text"
             class="chat-input"
           />
@@ -240,7 +268,7 @@
             </svg>
           </button>
         </div>
-        <div class="input-hint">Press Enter to send</div>
+        <div class="input-hint">Appuyez sur Entrée pour envoyer</div>
       </div>
     </div>
   </div>
@@ -261,6 +289,8 @@ const isLoading = ref(false);
 const timer = ref(0);
 const messagesContainer = ref(null);
 const popularQuestions = ref([]);
+const showSourceModal = ref(false);
+const selectedSource = ref(null);
 let timerInterval = null;
 
 // Fonction pour récupérer les questions populaires
@@ -298,12 +328,32 @@ const truncateText = (text, maxLength) => {
   return text.substring(0, maxLength) + '...';
 };
 
-// Function to expand/show source details
-const expandSource = (source) => {
-  // You could open a modal, navigate to the source, or show more details
+// Function to expand/show source details in modal
+const expandSource = async (source) => {
   console.log('Source clicked:', source);
-  // For now, just alert the full title
-  alert(`Source: ${source.question}\n\nID: ${source.id}`);
+
+  // If we have the answer already in the source, use it
+  if (source.answer) {
+    selectedSource.value = source;
+    showSourceModal.value = true;
+    return;
+  }
+
+  // Otherwise, we need to fetch it from the raw_matches or backend
+  // For now, we'll use what we have
+  selectedSource.value = {
+    ...source,
+    answer: source.answer || '<p>Answer content not available in current response format.</p>'
+  };
+  showSourceModal.value = true;
+};
+
+// Function to close modal
+const closeModal = () => {
+  showSourceModal.value = false;
+  setTimeout(() => {
+    selectedSource.value = null;
+  }, 300); // Wait for animation to complete
 };
 
 // Fonction pour faire défiler vers le bas
@@ -581,7 +631,7 @@ onMounted(() => {
   flex-direction: column;
   height: 100vh;
   width: 100%;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #f5f7fa;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   position: relative;
   overflow: hidden;
@@ -608,10 +658,10 @@ onMounted(() => {
 }
 
 /* ============================================
-   ENHANCED HEADER
+   HEADER
 ============================================ */
 .chat-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #667eea;
   padding: 20px 28px;
   box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
   backdrop-filter: blur(10px);
@@ -756,10 +806,7 @@ onMounted(() => {
 .welcome-title {
   font-size: 2.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #667eea;
   margin: 0 0 16px 0;
   letter-spacing: -1px;
 }
@@ -823,7 +870,7 @@ onMounted(() => {
   border-color: #667eea;
   transform: translateY(-4px) scale(1.02);
   box-shadow: 0 12px 28px rgba(102, 126, 234, 0.25);
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);
+  background: rgba(102, 126, 234, 0.03);
 }
 
 .question-card:active {
@@ -906,7 +953,7 @@ onMounted(() => {
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #667eea;
   order: 2;
 }
 
@@ -937,7 +984,7 @@ onMounted(() => {
 }
 
 .user-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #667eea;
   color: white;
   border-bottom-right-radius: 4px;
 }
@@ -963,35 +1010,6 @@ onMounted(() => {
   font-weight: 500;
 }
 
-/* ============================================
-   LLM BADGE
-============================================ */
-.llm-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  margin-bottom: 14px;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge-icon {
-  width: 14px;
-  height: 14px;
-  animation: sparkle 2s ease-in-out infinite;
-}
-
-@keyframes sparkle {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(180deg) scale(1.1); }
-}
 
 /* ============================================
    HTML CONTENT STYLING
@@ -1083,7 +1101,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: #f8fafc;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   cursor: pointer;
@@ -1095,7 +1113,7 @@ onMounted(() => {
 }
 
 .source-chip:hover {
-  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+  background: #ede9fe;
   border-color: #667eea;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
@@ -1111,7 +1129,7 @@ onMounted(() => {
   justify-content: center;
   width: 22px;
   height: 22px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #667eea;
   color: white;
   border-radius: 6px;
   font-size: 0.75rem;
@@ -1253,7 +1271,7 @@ onMounted(() => {
   width: 12px;
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #667eea;
   animation: dotPulse 1.5s infinite linear;
   animation-delay: 0.25s;
 }
@@ -1267,7 +1285,7 @@ onMounted(() => {
   width: 12px;
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #667eea;
 }
 
 .dot-pulse::before {
@@ -1345,25 +1363,6 @@ onMounted(() => {
   box-shadow: 0 4px 20px rgba(102, 126, 234, 0.25);
 }
 
-.attach-btn {
-  width: 40px;
-  height: 40px;
-  background: transparent;
-  border: none;
-  border-radius: 12px;
-  cursor: not-allowed;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-}
-
-.attach-btn svg {
-  width: 22px;
-  height: 22px;
-  color: #cbd5e1;
-}
 
 .chat-input {
   flex: 1;
@@ -1388,7 +1387,7 @@ onMounted(() => {
 .send-btn {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #667eea;
   border: none;
   border-radius: 16px;
   cursor: pointer;
@@ -1445,6 +1444,329 @@ onMounted(() => {
   font-size: 0.85rem;
   color: #94a3b8;
   font-weight: 500;
+}
+
+/* ============================================
+   SOURCE MODAL
+============================================ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px;
+  border-bottom: 2px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.modal-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.modal-icon {
+  width: 48px;
+  height: 48px;
+  padding: 12px;
+  background: #667eea;
+  border-radius: 12px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.modal-title-wrapper h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+}
+
+.modal-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.modal-close {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.modal-close svg {
+  width: 24px;
+  height: 24px;
+  color: #64748b;
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  transform: rotate(90deg);
+}
+
+.modal-close:hover svg {
+  color: #ef4444;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+}
+
+.source-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.meta-item svg {
+  width: 20px;
+  height: 20px;
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+.meta-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.meta-value {
+  font-size: 0.9rem;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.source-question {
+  margin-bottom: 28px;
+  padding: 20px;
+  background: #ede9fe;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+}
+
+.source-question h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #667eea;
+  font-weight: 700;
+}
+
+.source-question p {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1e293b;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.source-answer {
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+}
+
+.source-answer h4 {
+  margin: 0 0 16px 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.answer-content {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: #334155;
+}
+
+.answer-content :deep(p) {
+  margin: 0 0 14px 0;
+}
+
+.answer-content :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.answer-content :deep(ul),
+.answer-content :deep(ol) {
+  margin: 14px 0;
+  padding-left: 28px;
+}
+
+.answer-content :deep(li) {
+  margin: 8px 0;
+}
+
+.answer-content :deep(strong) {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.answer-content :deep(a) {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.answer-content :deep(a:hover) {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
+.answer-content :deep(code) {
+  background: #f1f5f9;
+  color: #667eea;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.92em;
+  font-weight: 600;
+}
+
+.modal-footer {
+  padding: 20px 28px;
+  border-top: 2px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background: #ffffff;
+}
+
+.modal-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+}
+
+.modal-btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.modal-btn-secondary:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal Fade Animation */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-fade-enter-active .modal-container,
+.modal-fade-leave-active .modal-container {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-fade-enter-from .modal-container,
+.modal-fade-leave-to .modal-container {
+  transform: translateY(-30px) scale(0.95);
+}
+
+/* Modal Scrollbar */
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* ============================================
@@ -1590,6 +1912,81 @@ onMounted(() => {
 
   .message-content {
     max-width: 85%;
+  }
+}
+
+/* Modal Responsive */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .modal-container {
+    max-height: 95vh;
+    border-radius: 16px;
+  }
+
+  .modal-header {
+    padding: 20px;
+  }
+
+  .modal-title-wrapper h3 {
+    font-size: 1.25rem;
+  }
+
+  .modal-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .source-meta {
+    padding: 16px;
+  }
+
+  .meta-item {
+    font-size: 0.85rem;
+  }
+
+  .source-question,
+  .source-answer {
+    padding: 16px;
+  }
+
+  .modal-footer {
+    padding: 16px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-icon {
+    width: 40px;
+    height: 40px;
+    padding: 10px;
+  }
+
+  .modal-title-wrapper {
+    gap: 12px;
+  }
+
+  .modal-title-wrapper h3 {
+    font-size: 1.1rem;
+  }
+
+  .modal-close {
+    width: 36px;
+    height: 36px;
+  }
+
+  .source-meta {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .meta-item {
+    width: 100%;
   }
 }
 </style>

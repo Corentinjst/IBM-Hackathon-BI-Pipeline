@@ -192,10 +192,21 @@ def llm_process_results(user_query: str, matches: list):
                 "answer_html": f"<p>{content}</p>",
                 "reason_if_unanswered": None,
                 "used_source_ids": [m['id'] for m in matches],
-                "citations": [{"id": m['id'], "title": m['question'], "url": None} for m in matches],
+                "citations": [{"id": m['id'], "title": m['question'], "url": None, "answer": m['answer']} for m in matches],
                 "meta": {"query_echo": user_query, "notes": "Non-JSON fallback"},
                 "redirect": {"needed": False, "label": None, "url": None}
             }
+
+        # ✅ Enrich citations with full answer content from matches
+        if "citations" in result_json and result_json["citations"]:
+            # Create a map of id -> match for quick lookup
+            match_map = {m['id']: m for m in matches}
+
+            # Add answer content to each citation
+            for citation in result_json["citations"]:
+                if citation.get("id") in match_map:
+                    citation["answer"] = match_map[citation["id"]]["answer"]
+                    citation["score"] = match_map[citation["id"]].get("score")
 
         return result_json
 
@@ -207,7 +218,7 @@ def llm_process_results(user_query: str, matches: list):
             "answer_html": f"<p>{matches[0]['answer']}</p>",
             "reason_if_unanswered": None,
             "used_source_ids": [matches[0]["id"]],
-            "citations": [{"id": matches[0]["id"], "title": matches[0]["question"], "url": None}],
+            "citations": [{"id": matches[0]["id"], "title": matches[0]["question"], "url": None, "answer": matches[0]["answer"], "score": matches[0].get("score")}],
             "meta": {"query_echo": user_query, "notes": "LLM error fallback"},
             "redirect": {"needed": False, "label": None, "url": None},
             "error": str(e)
