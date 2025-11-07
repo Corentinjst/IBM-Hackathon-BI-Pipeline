@@ -1,18 +1,18 @@
 <template>
   <div class="dashboard">
-    <h1>📊 Dashboard - Analyse des réponses</h1>
+    <h1>Dashboard - Analyse des réponses</h1>
 
     <!-- Première ligne : Camembert + Quadrant -->
     <div class="main-row">
       <!-- 1. Camembert -->
       <div class="card small-pie-card">
-        <h2>1️⃣ Pourcentage de réponses utiles</h2>
+        <h2>1. Pourcentage de réponses utiles</h2>
         <canvas id="pieChart"></canvas>
       </div>
 
       <!-- 2. Quadrant Satisfaction vs Similarité -->
       <div class="card">
-        <h2>2️⃣ Analyse Satisfaction vs Similarité</h2>
+        <h2>2. Analyse Satisfaction vs Similarité</h2>
         <canvas id="quadrantChart"></canvas>
       </div>
     </div>
@@ -21,13 +21,13 @@
     <div class="main-row">
       <!-- 3. Questions les plus posées -->
       <div class="card">
-        <h2>3️⃣ Questions les plus posées</h2>
+        <h2>3. Questions les plus posées</h2>
         <canvas id="mostAskedChart"></canvas>
       </div>
 
       <!-- 4. Questions les moins posées -->
       <div class="card">
-        <h2>4️⃣ Questions les moins posées</h2>
+        <h2>4. Questions les moins posées</h2>
         <canvas id="leastAskedChart"></canvas>
       </div>
     </div>
@@ -36,13 +36,13 @@
     <div class="main-row">
       <!-- 5. Temps de réponse moyen par jour -->
       <div class="card">
-        <h2>5️⃣ Temps de réponse moyen par jour</h2>
+        <h2>5. Temps de réponse moyen par jour</h2>
         <canvas id="responseTimeChart"></canvas>
       </div>
 
       <!-- 6. Nombre de requêtes par jour -->
       <div class="card">
-        <h2>6️⃣ Nombre de requêtes par jour</h2>
+        <h2>6. Nombre de requêtes par jour</h2>
         <canvas id="requestsPerDayChart"></canvas>
       </div>
     </div>
