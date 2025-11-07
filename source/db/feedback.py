@@ -1,12 +1,14 @@
 import pymysql
 
+import os
 # Database configuration
+
 DB_CONFIG = {
-    'host': 'guereak.com',
-    'port': 3306,
-    'user': 'votre_user',
-    'password': 'votre_password',
-    'database': 'help_center',
+    'host': os.getenv('DB_HOST'),
+    'port': os.getenv('DB_PORT'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'database': os.getenv('DB_DATABASE_HC'),
     'charset': 'utf8mb4'
 }
 
