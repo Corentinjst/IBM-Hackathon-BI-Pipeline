@@ -93,9 +93,14 @@ def llm_process_results(user_query: str, matches: list):
     Use LLM to synthesize an answer from the top Elasticsearch matches,
     following a standardized JSON output schema for front-end consumption.
     """
+    print("[LLM] Starting llm_process_results")
+    print(f"[LLM] User query: {user_query}")
+    print(f"[LLM] Number of matches: {len(matches)}")
 
     # ✅ Handle no matches
     if not matches:
+        print("[LLM] No matches found, returning fallback response")
+
         return {
             "language": "fr",
             "answered": False,
@@ -114,6 +119,7 @@ def llm_process_results(user_query: str, matches: list):
         }
 
     # ✅ Build structured context for LLM
+    print("[LLM] Building excerpts from matches...")
     excerpts = [
         {
             "id": match["id"],
@@ -124,6 +130,7 @@ def llm_process_results(user_query: str, matches: list):
         }
         for match in matches
     ]
+    print(f"[LLM] Built {len(excerpts)} excerpts")
 
     fallback = {"label": "Formulaire de contact", "url": "https://example.com/contact"}
 
@@ -165,6 +172,7 @@ def llm_process_results(user_query: str, matches: list):
     }
 
     # ✅ LLM call with response_format for JSON
+    print("[LLM] Calling OpenAI API...")
     try:
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
@@ -177,14 +185,18 @@ def llm_process_results(user_query: str, matches: list):
             response_format={"type": "json_object"}  # Force JSON output
         )
 
+        print("[LLM] Received response from OpenAI")
         content = response.choices[0].message.content.strip()
 
-        print("LLM Raw Response:", content)  # For debugging
+        print("[LLM] Raw Response:", content[:200] + "..." if len(content) > 200 else content)
 
         # ✅ Parse JSON safely
+        print("[LLM] Parsing JSON response...")
         try:
             result_json = json.loads(content)
+            print("[LLM] JSON parsed successfully")
         except json.JSONDecodeError:
+            print("[LLM] JSON parsing failed, using fallback")
             # fallback if not strictly JSON
             # Wrap answers in <p> tags if not already HTML
             citations_with_wrapped_answers = []
@@ -211,6 +223,7 @@ def llm_process_results(user_query: str, matches: list):
             }
 
         # ✅ Enrich citations with full answer content from matches
+        print("[LLM] Enriching citations with answer content...")
         if "citations" in result_json and result_json["citations"]:
             # Create a map of id -> match for quick lookup
             # Support both string and int IDs for flexible matching
@@ -253,11 +266,14 @@ def llm_process_results(user_query: str, matches: list):
                     citation["score"] = matched_item.get("score")
 
         # Debug: Print citations to verify answer field is present
-        print("Enriched citations:", json.dumps(result_json.get("citations", []), ensure_ascii=False, indent=2)[:500] + "...")
+        print("[LLM] Enriched citations:", json.dumps(result_json.get("citations", []), ensure_ascii=False, indent=2)[:500] + "...")
 
+        print("[LLM] Returning result_json")
         return result_json
 
     except Exception as e:
+        print(f"[LLM] ERROR: {str(e)}")
+
         # Fallback to the best match if API fails
         fallback_answer = matches[0]["answer"]
         # Wrap in <p> if not already HTML
@@ -397,14 +413,27 @@ def sync_database():
 
 @app.post("/ask")
 def ask_question(payload: QuestionRequest):
+    print("\n" + "="*60)
+    print("[START] ask_question called")
+    print("="*60)
+
     query = payload.message
     top_k = payload.top_k
     use_llm = payload.use_llm
 
+    print(f"[DEBUG] Query: {query}")
+    print(f"[DEBUG] Top K: {top_k}")
+    print(f"[DEBUG] Use LLM: {use_llm}")
+
+    print("\n[STEP 1] Connecting to Elasticsearch...")
     es = Elasticsearch([f"http://{ES_HOST}:{ES_PORT}"])
+    print(f"[DEBUG] Connected to Elasticsearch at {ES_HOST}:{ES_PORT}")
 
+    print("\n[STEP 2] Generating query embedding...")
     query_embedding = generate_embedding(query)
+    print(f"[DEBUG] Embedding generated (length: {len(query_embedding)})")
 
+    print("\n[STEP 3] Searching Elasticsearch...")
     results = es.search(
         index=ES_INDEX,
         size=top_k,
@@ -419,7 +448,9 @@ def ask_question(payload: QuestionRequest):
         },
         _source=["id", "question", "answer", "category"]
     )
+    print(f"[DEBUG] Search complete. Found {len(results['hits']['hits'])} results")
 
+    print("\n[STEP 4] Processing matches...")
     matches = [
         {
             "score": hit["_score"],
@@ -429,12 +460,23 @@ def ask_question(payload: QuestionRequest):
         }
         for hit in results['hits']['hits']
     ]
+    print(f"[DEBUG] Processed {len(matches)} matches")
 
     # If LLM processing is enabled, use it to synthesize the best answer
     if use_llm and matches:
-        return llm_process_results(query, matches)
+        print("\n[STEP 5] Calling LLM to process results...")
+        result = llm_process_results(query, matches)
+        print("[DEBUG] LLM processing complete")
+        print("="*60)
+        print("[END] Returning LLM-processed response")
+        print("="*60 + "\n")
+        return result
 
     # Otherwise, return raw matches (original behavior)
+    print("\n[STEP 5] Returning raw matches (no LLM)")
+    print("="*60)
+    print("[END] Returning raw response")
+    print("="*60 + "\n")
     return {
         "matches": matches,
         "llm_processed": False
