@@ -1,5 +1,7 @@
 # IBM Hackathon BI Pipeline
 
+**VIDEO LINK: https://youtu.be/pmFmCoFlWnw**
+
 This project was developed for an IBM Hackathon focused on building a Business Intelligence pipeline with AI-powered question answering capabilities. The system combines a traditional help center database with semantic search using embeddings and OpenAI's GPT models to provide intelligent responses to user queries.
 
 ## Overview
