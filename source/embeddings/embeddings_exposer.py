@@ -186,13 +186,26 @@ def llm_process_results(user_query: str, matches: list):
             result_json = json.loads(content)
         except json.JSONDecodeError:
             # fallback if not strictly JSON
+            # Wrap answers in <p> tags if not already HTML
+            citations_with_wrapped_answers = []
+            for m in matches:
+                answer = m['answer']
+                if answer and not answer.strip().startswith('<'):
+                    answer = f"<p>{answer}</p>"
+                citations_with_wrapped_answers.append({
+                    "id": m['id'],
+                    "title": m['question'],
+                    "url": None,
+                    "answer": answer
+                })
+
             result_json = {
                 "language": "fr",
                 "answered": True,
                 "answer_html": f"<p>{content}</p>",
                 "reason_if_unanswered": None,
                 "used_source_ids": [m['id'] for m in matches],
-                "citations": [{"id": m['id'], "title": m['question'], "url": None, "answer": m['answer']} for m in matches],
+                "citations": citations_with_wrapped_answers,
                 "meta": {"query_echo": user_query, "notes": "Non-JSON fallback"},
                 "redirect": {"needed": False, "label": None, "url": None}
             }
@@ -200,25 +213,64 @@ def llm_process_results(user_query: str, matches: list):
         # ✅ Enrich citations with full answer content from matches
         if "citations" in result_json and result_json["citations"]:
             # Create a map of id -> match for quick lookup
-            match_map = {m['id']: m for m in matches}
+            # Support both string and int IDs for flexible matching
+            match_map = {}
+            for m in matches:
+                match_map[m['id']] = m
+                match_map[str(m['id'])] = m  # Also add string version of ID
+
+            print(f"DEBUG: Match map keys: {list(match_map.keys())}")
+            print(f"DEBUG: Citation IDs before enrichment: {[c.get('id') for c in result_json['citations']]}")
 
             # Add answer content to each citation
             for citation in result_json["citations"]:
-                if citation.get("id") in match_map:
-                    citation["answer"] = match_map[citation["id"]]["answer"]
-                    citation["score"] = match_map[citation["id"]].get("score")
+                citation_id = citation.get("id")
+
+                # Try to find match with both original ID and string version
+                matched_item = match_map.get(citation_id) or match_map.get(str(citation_id))
+
+                # Always ensure the citation has an "answer" field
+                if matched_item:
+                    answer_content = matched_item["answer"]
+                    print(f"DEBUG: Found match for citation ID {citation_id}, answer length: {len(answer_content) if answer_content else 0}")
+                else:
+                    # If ID not found in matches, check if citation already has an answer
+                    answer_content = citation.get("answer")
+                    if not answer_content:
+                        print(f"WARNING: No match found for citation ID {citation_id} and no existing answer")
+                        answer_content = "Contenu non disponible"
+                    else:
+                        print(f"DEBUG: No match for citation ID {citation_id}, using existing answer from citation")
+
+                # If answer doesn't already start with HTML tags, wrap it in <p>
+                if answer_content and not answer_content.strip().startswith('<'):
+                    answer_content = f"<p>{answer_content}</p>"
+
+                citation["answer"] = answer_content
+
+                # Add score if available from match
+                if matched_item:
+                    citation["score"] = matched_item.get("score")
+
+        # Debug: Print citations to verify answer field is present
+        print("Enriched citations:", json.dumps(result_json.get("citations", []), ensure_ascii=False, indent=2)[:500] + "...")
 
         return result_json
 
     except Exception as e:
         # Fallback to the best match if API fails
+        fallback_answer = matches[0]["answer"]
+        # Wrap in <p> if not already HTML
+        if fallback_answer and not fallback_answer.strip().startswith('<'):
+            fallback_answer = f"<p>{fallback_answer}</p>"
+
         return {
             "language": "fr",
             "answered": True,
-            "answer_html": f"<p>{matches[0]['answer']}</p>",
+            "answer_html": fallback_answer,
             "reason_if_unanswered": None,
             "used_source_ids": [matches[0]["id"]],
-            "citations": [{"id": matches[0]["id"], "title": matches[0]["question"], "url": None, "answer": matches[0]["answer"], "score": matches[0].get("score")}],
+            "citations": [{"id": matches[0]["id"], "title": matches[0]["question"], "url": None, "answer": fallback_answer, "score": matches[0].get("score")}],
             "meta": {"query_echo": user_query, "notes": "LLM error fallback"},
             "redirect": {"needed": False, "label": None, "url": None},
             "error": str(e)
